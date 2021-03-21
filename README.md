@@ -1,6 +1,7 @@
 # Webserver on C#
 Использовалась архитектура thread per request
-* Для запуска необходимо: *
+***
+*Для запуска необходимо:*
 * `cd WebServer`
 * `dotnet build`
 * `cd bin/Debug/net5.0`
