@@ -62,6 +62,10 @@ namespace HTTPServer
 
             string response = "HTTP/1.1 " + codeStr + "\nServer: MApache\nDate:" + DateTime.Now.ToString() + "\nConnection: Keep-Alive" + "\n\n" + html;
 
+            if (Method == "HEAD") {
+                response = "HTTP/1.1 " + codeStr + "\r\nServer: MApache\nDate:" + DateTime.Now.ToString() + "\nConnection: Keep-Alive" + "\r\n\r\n";
+            }
+
             byte[] Buffer = Encoding.ASCII.GetBytes(response);
 
             TcpClient.GetStream().Write(Buffer, 0, Buffer.Length);
@@ -115,14 +119,16 @@ namespace HTTPServer
             requestUri = reqMatch.Groups[1].Value;
             requestUri = Uri.UnescapeDataString(requestUri);
 
-            if (requestUri.IndexOf("..") >= 0)
+            if (requestUri.IndexOf("../") >= 0)
             {
                 return 403;
             }
 
             if (requestUri.EndsWith("/"))
             {
-                requestUri += "index.html";
+                if (requestUri.LastIndexOf('.') < 0) {
+                    requestUri += "index.html";
+                }
             }
 
             return 200;
@@ -136,6 +142,10 @@ namespace HTTPServer
             {
                 Console.WriteLine("No such file");
                 Console.WriteLine(filePath);
+
+                if (filePath.IndexOf("index.html") >= 0) {
+                    return 403;
+                }
                 return 404;
             }
             return 200;
@@ -192,15 +202,20 @@ namespace HTTPServer
                 return 500;
             }
 
-            string headers = "HTTP/1.1 200 OK\nServer: MApache\nDate:" + DateTime.Now.ToString() + "\nConnection: keep-alive\nContent-Type:" + ContentType + "\nContent-Length:" + file.Length + "\n\n";
-            byte[] headersBuffer = Encoding.ASCII.GetBytes(headers);
-            TcpClient.GetStream().Write(headersBuffer, 0, headersBuffer.Length);
-
+            
             if (Method == "HEAD")
             {
+                string ending = "HTTP/1.1 200 OK\r\nServer: MApache\r\nDate:" + DateTime.Now.ToString() + "\r\nConnection: keep-alive"+ $"\r\nContent-Type:{ContentType}" + $"\r\ncontent-length:{file.Length}" + "\r\n\r\n";
+                byte[] end =  Encoding.ASCII.GetBytes(ending);
+                TcpClient.GetStream().Write(end, 0, end.Length);
                 file.Close();
                 return 200;
             }
+
+            string headers = "HTTP/1.1 200 OK\r\nServer: MApache\r\nDate:" + DateTime.Now.ToString() + "\r\nConnection: keep-alive\r\nContent-Type:" + ContentType + "\r\nContent-Length:" + file.Length + "\n\n";
+            byte[] headersBuffer = Encoding.ASCII.GetBytes(headers);
+            TcpClient.GetStream().Write(headersBuffer, 0, headersBuffer.Length);
+
 
             int lengthData = 0;
             byte[] buffer = new byte[1024];
